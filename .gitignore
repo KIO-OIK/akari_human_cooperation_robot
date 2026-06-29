@@ -1,6 +1,5 @@
 .DS_Store
 venv
-utils
 known_faces
 __pycache__
 encodings.pickle
