@@ -1,0 +1,13 @@
+akari-client[depthai]
+akari-proto
+depthai==2.30.0
+mediapipe
+pyaudio
+shapely
+psutil
+
+face_recognition
+gTTS
+
+blobconverter
+opencv-python
