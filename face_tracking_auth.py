@@ -1,4 +1,4 @@
-#face_tracking.py
+#face_tracking_auth.py
 
 # face_recognitionを使用した顔認識の例
 import face_recognition
@@ -99,14 +99,14 @@ class FaceTracker:
         self.joints.set_joint_accelerations(pan=30, tilt=30)
 
         # Initialize motor position
-        self.joints.move_joint_positions(pan=0, tilt=0)
-        while True:
-            if (
-                abs(self.joints.get_joint_positions()["pan"] - self._default_x) <= 0.087 #absは絶対値
-                and abs(self.joints.get_joint_positions()["tilt"] - self._default_y)
-                <= 0.087
-            ):
-                break
+        # self.joints.move_joint_positions(pan=0, tilt=0)
+        # while True:
+        #     if (
+        #         abs(self.joints.get_joint_positions()["pan"] - self._default_x) <= 0.087 #absは絶対値
+        #         and abs(self.joints.get_joint_positions()["tilt"] - self._default_y)
+        #         <= 0.087
+        #     ):
+        #         break
         self.currentMotorAngle = self.joints.get_joint_positions()
 
         # Dynamixel Input Value
@@ -560,6 +560,26 @@ def FaceRecognition(q_detection: Any,q_face: Any, m5) -> None:
                     best_idx = np.argmax(dets[:, -1])
                     best = dets[best_idx]
 
+
+
+
+
+                    # x, y, w, h = best[0], best[1], best[2], best[3]
+
+                    # bbox_area = w * h
+
+                    # print("area:", bbox_area)
+
+                    # if bbox_area > 0.15:
+                    #     print("人が近づいた")
+
+                    #     person_close_event.set()
+
+
+
+
+
+
                     # ★1人だけQueueへ
                     q_detection.put(best[:4])
 
@@ -588,7 +608,7 @@ def FaceRecognition(q_detection: Any,q_face: Any, m5) -> None:
                 #counter = 0
                 #start_time = time.time()
 
-            #if(data["brightness"]>3500):
+            #if(data["brightness"]>3500): 
                 #running1 = False
                 #break
 
@@ -602,7 +622,7 @@ def FaceRecognition(q_detection: Any,q_face: Any, m5) -> None:
 
 
 
-def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_endvoice: threading.Event) -> None:
+def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_endvoice: threading.Event) -> None:#顔認識
 
 
     count1 = 99
@@ -615,7 +635,11 @@ def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_end
     face_locations = []
     names = []
 
+    #state = "search"
+
     while True:
+
+        #person_close_event.wait()
 
 
         try:
@@ -695,11 +719,19 @@ def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_end
 
                 # 顔の特徴量を抽出
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                print("encoding開始")
+
                 encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+
+                print("encoding終了")
+
             
                 names = []
                 for encoding in encodings:
+                    print("比較開始")
                     matches = face_recognition.compare_faces(known_data["encodings"], encoding)
+                    print("比較終了")
                     name = "Unknown"
                     if True in matches:
                         matched_idxs = [i for (i, b) in enumerate(matches) if b]
@@ -720,7 +752,16 @@ def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_end
 
                     q_voice.put_nowait((names_str))
 
+                    print("q_voice送信完了")
 
+                # 描画処理
+                for ((top, right, bottom, left), name) in zip(face_locations, names):
+                    # 枠と名前
+                    cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+                    y = top - 15 if top - 15 > 15 else top +15
+                    cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+
+                #cv2.imshow("OAK-D Face Recognition", frame)
 
 
 
@@ -752,15 +793,15 @@ def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_end
 
 
 
-            # 描画処理
-            for ((top, right, bottom, left), name) in zip(face_locations, names):
-                # 枠と名前
-                cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-                y = top - 15 if top - 15 > 15 else top +15
-                cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+            # # 描画処理
+            # for ((top, right, bottom, left), name) in zip(face_locations, names):
+            #     # 枠と名前
+            #     cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+            #     y = top - 15 if top - 15 > 15 else top +15
+            #     cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
 
-            cv2.imshow("OAK-D Face Recognition", frame)
-            cv2.waitKey(1)
+            # cv2.imshow("OAK-D Face Recognition", frame)
+            #cv2.waitKey(1)
 
             
 
@@ -768,7 +809,7 @@ def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_end
 
         
 
-def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: threading.Event, m5, joints, judgement, soil, tempC, dt) -> None:
+def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: threading.Event, m5, joints, reject_name,judgement_soil,judgement_temp,judgement_suntime) -> None:
 
     count = 0
     name = ""
@@ -828,9 +869,10 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
 
                 if countM5 == 0:
 
-                    m5.set_display_text("いいえ",pos_x=Positions.LEFT,pos_y=Positions.BOTTOM, refresh=True, size=4)
-                    m5.set_display_text("はい",pos_x=Positions.RIGHT,pos_y=Positions.BOTTOM, refresh=False, size=4)
+                    print("M5表示処理開始")
 
+                    m5.set_display_text("いいえ",pos_x=Positions.LEFT,pos_y=Positions.BOTTOM, refresh=True, size=4, text_color=Colors.BLACK)
+                    m5.set_display_text("はい",pos_x=Positions.RIGHT,pos_y=Positions.BOTTOM, refresh=False, size=4, text_color=Colors.BLACK)
                
 
                 if data["button_a"] == True:
@@ -851,26 +893,47 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
 
 
                 if data["button_c"] == True:
-                    answer_yes = AnswerYes(names_str, m5, joints, judgement, soil, tempC, dt, tempC_threshold_min, tempC_threshold_max)
 
-                    hour = dt.hour
 
-                    if hour == setting_time:
-                        answer_yes.request_sun()
+                    for name in reject_name:
 
-                    if soil > soil_threshold:
-                        answer_yes.request_water()
+                        if name == names_str:
+                            text = "何回もごめんねーー"
+                            tts = gTTS(text, lang="ja", slow=False)
+                            #ファイルへ出力
+                            tts.save('yomiage.mp3')
+                            #音声ファイルの読み込み
+                            os.system("mpg123 yomiage.mp3")
 
-                    if tempC_threshold_min > tempC or tempC > tempC_threshold_max:
-                        answer_yes.request_temp()
+                            tracking_enabled = False
+
+                            client.AboutKachaka(1)
+
+                            time.sleep(10)
+
+                            human_detection.detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
+
+
+                    answer_yes = AnswerYes(names_str, m5, joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
+
+                    # hour = dt.hour
+
+                    # if hour == setting_time:
+                    #     answer_yes.request_sun()
+
+                    # if soil > soil_threshold:
+                    #     answer_yes.request_water()
+
+                    # if tempC_threshold_min > tempC or tempC > tempC_threshold_max:
+                    #     answer_yes.request_temp()
 
                     
 
 
 
-                    #answer_yes.request_water()
+                    answer_yes.which_request()
 
-                    break
+                    #break
 
                 
                 countM5 += 1
@@ -937,18 +1000,22 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
 
             while True:
 
+                print("countM5:",countM5)
+
                 data = m5.get()
 
                 if countM5 == 0:
 
-                    m5.set_display_text("いいえ",pos_x=Positions.LEFT,pos_y=Positions.BOTTOM, refresh=True, size=4)
-                    m5.set_display_text("はい",pos_x=Positions.RIGHT,pos_y=Positions.BOTTOM, refresh=False, size=4)
+                    print("M5表示処理開始")
+
+                    m5.set_display_text("いいえ",pos_x=Positions.LEFT,pos_y=Positions.BOTTOM, refresh=True, size=4, text_color=Colors.BLACK)
+                    m5.set_display_text("はい",pos_x=Positions.RIGHT,pos_y=Positions.BOTTOM, refresh=False, size=4, text_color=Colors.BLACK)
 
                
 
                 if data["button_a"] == True:
 
-                    text="ごめなさーーーーーーーーーい"
+                    text="ごめんなさーーーーーーーーーい"
 
                     tts = gTTS(text, lang="ja", slow=False)
 
@@ -964,20 +1031,40 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
 
 
                 if data["button_c"] == True:
-                    answer_yes = AnswerYes(names_str, m5, joints, judgement, soil, tempC, dt, tempC_threshold_min, tempC_threshold_max)
 
-                    hour = dt.hour
+                    for name in reject_name:
 
-                    if hour == setting_time:
-                        answer_yes.request_sun()
+                        if name == names_str:
+                            text = "何回もごめんねーー"
+                            tts = gTTS(text, lang="ja", slow=False)
+                            #ファイルへ出力
+                            tts.save('yomiage.mp3')
+                            #音声ファイルの読み込み
+                            os.system("mpg123 yomiage.mp3")
 
-                    if soil > soil_threshold:
-                        answer_yes.request_water()
+                            tracking_enabled = False
 
-                    if tempC_threshold_min > tempC or tempC > tempC_threshold_max:
-                        answer_yes.request_temp()
+                            client.AboutKachaka(1)
 
-                    #answer_yes.request_water()
+                            time.sleep(10)
+
+                            human_detection.detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
+
+
+                    answer_yes = AnswerYes(names_str, m5, joints, reject_name,judgement_soil,judgement_temp,judgement_suntime)
+
+                    # hour = dt.hour
+
+                    # if hour == setting_time:
+                    #     answer_yes.request_sun()
+
+                    # if soil > soil_threshold:
+                    #     answer_yes.request_water()
+
+                    # if tempC_threshold_min > tempC or tempC > tempC_threshold_max:
+                    #     answer_yes.request_temp()
+
+                    answer_yes.which_request()
 
                     break
 
@@ -1005,7 +1092,7 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
 
 
 
-def face_tracking(m5,joints,judgement, soil, tempC, dt) -> None:
+def face_tracking(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime) -> None:
 
     #データの受け渡しをするものがキュー
     q_detection: Any = Queue()
@@ -1025,7 +1112,7 @@ def face_tracking(m5,joints,judgement, soil, tempC, dt) -> None:
     t3 = threading.Thread(target=face_tracker._tracker)
     #t4 = threading.Thread(target=About_Display, args=(m5,Now_time,))
     t5 = threading.Thread(target=FaceAuth, args=(q_face,q_voice,voice_started,wait_endvoice,))
-    t6 = threading.Thread(target=SayVoice, args=(q_voice,voice_started,wait_endvoice,m5,joints,judgement,soil,tempC,dt,))
+    t6 = threading.Thread(target=SayVoice, args=(q_voice,voice_started,wait_endvoice,m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime,))
 
 
     t1.start()

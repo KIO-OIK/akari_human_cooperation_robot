@@ -9,24 +9,47 @@ from akari_client.color import Colors, Color
 
 import time
 
+import threading
 
 import face_tracking_auth
 
+import client
+import human_detection
+import face_distance
+# from client import scheduler
+# from client import SensorClient
+import new_arduino_send_akari
+
+
 #import main
+
+setting_time = 15
+soil_threshold = 700
+tempC_threshold_min = 20
+tempC_threshold_max = 32
 
 
 class AnswerYes:
 
-    def __init__(self,name,m5,joints,judgement, soil, tempC, dt, tempC_threshold_min, tempC_threshold_max) -> None:
+    def __init__(self,name,m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime) -> None:
         self.name = name
         self.m5 = m5
         self.joints = joints
-        self.judgement = judgement
-        self.soil = soil
-        self.tempC = tempC
-        self.dt = dt
-        self.tempC_threshold_min = tempC_threshold_min
-        self.tempC_threshold_max = tempC_threshold_max
+        self.reject_name = reject_name
+        self.judgement_soil = judgement_soil
+        self.judgement_temp = judgement_temp
+        self.judgement_suntime = judgement_suntime
+        # self.judgement = judgement
+        # self.soil = soil
+        # self.tempC = tempC
+        # self.dt = dt
+        # self.tempC_threshold_min = tempC_threshold_min
+        # self.tempC_threshold_max = tempC_threshold_max
+        # self.soil_threshold = soil_threshold
+        # self.setting_time = setting_time
+
+        # self.judgement, self.soil, self.tempC, self.dt= client.JudgementClient()
+        #self.judgement_soil, self.judgement_temp, self.judgement_suntime = client.JudgementClient()#これじゃもう一回受け取らなきゃだめになっちゃう
 
 
 
@@ -87,14 +110,28 @@ class AnswerYes:
                 #音声ファイルの読み込み
                 os.system("mpg123 yomiage_yes.mp3")
 
-                time.sleep(2)
+
+
+                client.AboutCooperation(self.name, 0, 1)
+
+                self.reject_name.append(self.name)
+
+                client.AboutKachaka(1)
+
+
+
+                #time.sleep(2)
 
                 self.joints.set_joint_velocities(pan=10,tilt=10)
 
 
                 time.sleep(20)
 
-                face_tracking_auth.tracking_enabled = True
+                human_detection.detect_human(self.reject_name)#人検知機能
+
+                #face_distance.face_distance()#人の距離検知
+
+                #face_tracking_auth.tracking_enabled = True
 
                 break
 
@@ -135,14 +172,20 @@ class AnswerYes:
 
                 #time.sleep(5)
 
-                 #音声ファイルの読み込み
+                #音声ファイルの読み込み
                 os.system("mpg123 yomiage_yes.mp3")
 
                 face_tracking_auth.tracking_enabled = True
 
+                # threading.Thread(target=SensorClient, daemon=True).start()
+                # threading.Thread(target=scheduler, daemon=True).start()
+
+                arduino_send_akari.main()
+
+
                 #time.sleep(2)
 
-                break
+                #break
 
             
             countM5 += 1
@@ -206,15 +249,24 @@ class AnswerYes:
                 #音声ファイルの読み込み
                 os.system("mpg123 yomiage_yes.mp3")
 
+                client.AboutCooperation(self.name, 0, 1)
+
+                self.reject_name.append(self.name)
+
+                client.AboutKachaka(1)
+
                 #time.sleep(2)
 
 
                 self.joints.set_joint_velocities(pan=10,tilt=10)
 
+
                 time.sleep(20)
 
+                human_detection.detect_human(self.reject_name)#人検知機能
 
-                face_tracking_auth.tracking_enabled = True
+
+                #face_tracking_auth.tracking_enabled = True
 
                 break
 
@@ -281,10 +333,10 @@ class AnswerYes:
     
     def request_temp(self) -> None:
 
-        if self.tempC < tempC_threshold_min:
+        if self.judgement_temp == 1:
             text= self.name + "さん！植物が寒そうにしてるよ！部屋の温度をあげてほしいな！"
 
-        if self.tempC > tempC_threshold_max:
+        if self.judgement_temp == 2:
             text= self.name + "さん！植物が暑そうにしてるよ！部屋の温度をあげてほしいな！"
 
 
@@ -337,12 +389,20 @@ class AnswerYes:
                 #音声ファイルの読み込み
                 os.system("mpg123 yomiage_yes.mp3")
 
-                time.sleep(20)
+                client.AboutCooperation(self.name, 0, 1)
+
+                self.reject_name.append(self.name)
+
+                client.AboutKachaka(1)
 
                 self.joints.set_joint_velocities(pan=10,tilt=10)
 
+                time.sleep(20)
 
-                face_tracking_auth.tracking_enabled = True
+                human_detection.detect_human(self.reject_name)#人検知機能
+
+
+                #face_tracking_auth.tracking_enabled = True
 
                 break
 
@@ -407,24 +467,36 @@ class AnswerYes:
 
     
 
-    #def which_request(self) -> None:
+    def which_request(self) -> None:
 
-        #while True:
 
-            #if self.soil > しきい値:
 
-                #self.request_water()
+        #judgement_soil, judgement_temp, judgement_suntime = client.JudgementClient()
 
-            #if 時間になったら(サーバー側から時間としきい値を取得)
+        # print("judgement:"+ str(self.judgement))
+        # print("soil:" + str(self.soil))
+        # print("tempC:"+str(self.tempC))
+        # print("dt:"+str(self.dt))
 
-                #self.request_sun()
+        # hour = self.dt.hour
 
-            #if tempC > 最高温度 or 最低温度しきい値 > self.tempC
+        while True:
 
-                #self.request_temp()
+            if self.judgement_soil == 1:
+
+                self.request_water()
+
+            if self.judgement_suntime == 1:#時間になったら(サーバー側から時間としきい値を取得)
+
+                self.request_sun()
+
+            if self.judgement_temp == 1 or self.judgement_temp == 2:
+
+                self.request_temp()
 
                 
-            #else break
+            else:
+                break
 
 
 

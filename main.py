@@ -37,11 +37,17 @@ import face_recognition
 
 
 
-from answer_yes import AnswerYes
+#from answer_yes import AnswerYes
+
+
+import human_detection
+import face_distance
 
 
 
 def main():
+    global reject_name
+    reject_name = []
 
 
     # akari_client_configを引数にしてAkariClientを作成する。
@@ -57,28 +63,50 @@ def main():
     #isSleep = False
     count = 0
 
+    #human_detection.detect_human()#人検知システム　
 
-    while(1):
 
-        #client.RasPiClient()
+    #print("検知終了")
 
-        judgement, soil, tempC, dt= client.RasPiClient()
+    #client.JudgementClient()#これを受け取ったら次に進むので、これが待機と動作を制御する
 
-        print("judgement:"+ str(judgement))
-        print("soil:" + str(soil))
-        print("tempC:"+str(tempC))
-        print("dt:"+str(dt))
+    judgement_soil,judgement_temp,judgement_suntime = client.JudgementClient()#これを受け取ったら次に進むので、これが待機と動作を制御する
+
+    print("judgement_soil:",judgement_soil)
+    print("judgement_temp:",judgement_temp)
+    print("judgement_suntime:",judgement_suntime)
+
+    reject_name = []
+
+    human_detection.detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)#人検知機能
+
+    #face_distance.face_distance()#人の距離検知
+
+
+    #face_tracking_auth.face_tracking(m5,joints)
+
+
+    # while(1):
+
+    #     #client.RasPiClient()
+
+        # judgement, soil, tempC, dt= client.RasPiClient()
+
+        # print("judgement:"+ str(judgement))
+        # print("soil:" + str(soil))
+        # print("tempC:"+str(tempC))
+        # print("dt:"+str(dt))
         #print("name:"+str(name))
         #print("status:"+str(status))
 
 
         
-        if judgement == 1: #まず、人検知をしてみつけてからface_tracking_auth.face_tracking(m5,joints,judgement, soil, tempC)
+    #     if judgement == 1: #まず、人検知をしてみつけてからface_tracking_auth.face_tracking(m5,joints,judgement, soil, tempC)
 
 
-            face_tracking_auth.face_tracking(m5,joints,judgement, soil, tempC, dt)
+    #         face_tracking_auth.face_tracking(m5,joints,judgement, soil, tempC, dt)
 
-        break
+    #     break
 
 
 if __name__ == "__main__":
