@@ -76,12 +76,14 @@ def main():
 
     re = []
 
-    last_sent = None
+    
 
-    while True:
-        tempC,soil = arduino_send_akari.main()
-        print("tempC:", tempC)
-        print("soil", soil)
+    # last_sent = None
+
+    # while True:
+    #     tempC,soil = arduino_send_akari.main()
+    #     print("tempC:", tempC)
+    #     print("soil", soil)
 
         # now = datetime.now()
 
@@ -97,11 +99,12 @@ def main():
         #         print("soil", soil)
 
 
-    # face_distance.face_distance(m5,joints,re)
+    # face_distance.face_distance(m5,joints,re, judgement_soil,judgement_temp,judgement_suntime)
 
-    #human_detection.detect_human(m5,joints,re,judgement_soil,judgement_temp,judgement_suntime)
+    # human_detection.detect_human(m5,joints,re,judgement_soil,judgement_temp,judgement_suntime)
 
-    #face_tracking_auth.face_tracking(m5,joints)
+
+    face_tracking_auth.face_tracking(m5,joints,re,judgement_soil,judgement_temp,judgement_suntime)
     # threading.Thread(target=socket_loop, daemon=True).start()
     # threading.Thread(target=scheduler, daemon=True).start()
 

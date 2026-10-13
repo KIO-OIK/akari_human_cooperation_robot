@@ -1,0 +1,125 @@
+
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_I
+
+
+
+
+
+
+
+
+
+
+
+
+    はい、この face_distance.py を見ると、かなり重要なことが分かりました。
+
+今回の
+
+QMetaObject::invokeMethod: No such method GuiReceiver::showImage(QString,cv::InputArray)
+Candidates are:
+    showImage(QString,cv::_InputArray)
+
+の原因候補として、ここがかなり強いです。
+
+cv2.imshow("Detections", frame)
+
+そして human_detection.py にも、
+
+cv2.imshow(name, frame)
+
+があります。
+
+つまり、あなたのプログラムでは複数の場所でOpenCVのGUI表示をしています。
+まず一番やってほしいこと
+
+以下の3か所を一旦コメントアウトしてください。
+face_distance.py
+
+# cv2.imshow("Detections", frame)
+
+# if cv2.waitKey(1) == ord("q"):
+#     break
+
+そして、
+
+# cv2.destroyAllWindows()
+
+もコメントアウト。
+human_detection.py
+
+# cv2.imshow(name, frame)
+
+と、
+
+# cv2.destroyAllWindows()
+
+をコメントアウト。
+
+これで実行してみてください。
+
+
+
+
+１周回った後の顔認証以降の処理を作ってた
+
+クラスAround
+関数around
+
+断ったとき、顔認証に戻る？
+
+
+顔認証の「あなたは００さんですか？」
+待つ時間きめて、それ超えたらしょげて人検知にする
+
+一周のときは再び顔認証
+
+
+１周したとき、水が満たされてもmainに戻らない←AboutCooperationと通信できてなくて止まっていた。

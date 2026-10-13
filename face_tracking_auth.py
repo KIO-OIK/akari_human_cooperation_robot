@@ -3,6 +3,8 @@
 # face_recognitionを使用した顔認識の例
 import face_recognition
 
+import client
+import human_detection
 
 import argparse
 import threading
@@ -29,8 +31,6 @@ from utils.utils import draw
 from akari_client.position import Positions
 from akari_client.color import Colors, Color
 
-
-import face_recognition
 import pickle
 
 
@@ -67,10 +67,6 @@ soil_threshold = 700
 tempC_threshold_min = 20
 tempC_threshold_max = 32
 
-running1 = True
-running2 = True
-running3 = True
-running4 = True
 
 # resize input to smaller size for faster inference
 NN_WIDTH, NN_HEIGHT = 160, 120
@@ -116,23 +112,21 @@ class FaceTracker:
     def _tracker(self) -> None:
         global pan_target_angle
         global tilt_target_angle
-        global running1
-        global running2
-        global running3
-        global running4
-
-        running1 = True
-        running2 = True
-        running3 = True
-        running4 = True
+        global running
 
         #count3 = 0
+
+        global stop_face_tracking
 
         global tracking_enabled
 
         tracking_enabled = True
 
         while True:
+
+            if stop_face_tracking == True:
+
+                break
 
             #count3 += 1
 
@@ -154,8 +148,10 @@ class FaceTracker:
                 #running3 = False
                 #break
             
-            #if(running1 == False or running2 == False or running4 == False):
-                #break
+            if(running == False):
+                print("def _tracker(self)完了、returnします")
+                return
+
 
 #-----------------------------------------------------------------------------
 
@@ -234,19 +230,19 @@ class DirectionUpdater: #カメラ画像から顔の位置を読み取り、次�
             self._tilt_p_gain = self._MIN_TILT_GAIN
 
     def _face_info_cb(self, q_detection: Any, m5) -> None:
-        global running1
-        global running2
-        global running3
-        global running4
+        global running
 
-        running1 = True
-        running2 = True
-        running3 = True
-        running4 = True
+        global stop_face_tracking
+
+
 
         m5stack = m5
         count2 = 0
         while True:
+
+            if stop_face_tracking == True:
+
+                break
 
             #count2 += 1
 
@@ -260,8 +256,9 @@ class DirectionUpdater: #カメラ画像から顔の位置を読み取り、次�
                 #running2 = False
                 #break
 
-            #if(running1 == False or running3 == False or running4 == False):
-                #break
+            if(running == False):
+                print("def _face_info_cb()完了、returnします")
+                return
 
             try:
                 #キュー（箱）の中に溜まっているデータのうち、一番古いもの（次に処理すべきデータ）を1つ取り出します。
@@ -360,8 +357,13 @@ class DirectionUpdater: #カメラ画像から顔の位置を読み取り、次�
 
 
 def FaceRecognition(q_detection: Any,q_face: Any, m5) -> None:
+    global stop_face_tracking
     m5stack = m5
     count1 = 0
+
+    
+
+
 
 
     # --------------- Arguments(引数) ---------------
@@ -413,7 +415,7 @@ def FaceRecognition(q_detection: Any,q_face: Any, m5) -> None:
 
 
     if not Path(nn_path).exists():
-        print("No blob found at {}. Looking into DepthAI model zoo.".format(nn_path))
+        # print("No blob found at {}. Looking into DepthAI model zoo.".format(nn_path))
         nn_path = str(
             blobconverter.from_zoo(
                 args.nn_model, shaves=6, zoo_type="depthai", use_cache=True
@@ -487,20 +489,16 @@ def FaceRecognition(q_detection: Any,q_face: Any, m5) -> None:
         #counter = 0
         #fps = 0.0
 
-        global running1
-        global running2
-        global running3
-        global running4
-
-        running1 = True
-        running2 = True
-        running3 = True
-        running4 = True
+        global running
 
         face_locations = []
         names = []
 
         while True:
+
+            if stop_face_tracking == True:
+
+                break
 
             count1 += 1
 
@@ -612,8 +610,9 @@ def FaceRecognition(q_detection: Any,q_face: Any, m5) -> None:
                 #running1 = False
                 #break
 
-            #if(running2 == False or running3 == False or running4 == False):
-                #break
+            if(running == False):
+                print("def FaceRecognition()完了、returnします")
+                return
 
             #if cv2.waitKey(1) == ord("q"):
                 #break
@@ -631,84 +630,98 @@ def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_end
     with open("encodings.pickle", "rb") as f:
         known_data = pickle.load(f)
 
-
+    global running
     face_locations = []
     names = []
 
     #state = "search"
 
+    print("====================================")
+
+    print("顔認証を実行します。")
+
+    print("====================================")
+
     while True:
 
-        #person_close_event.wait()
-
-
-        try:
-            #キュー（箱）の中に溜まっているデータのうち、一番古いもの（次に処理すべきデータ）を1つ取り出します。
-            #timeout=5:データが届くまで最大5秒間は待つ 
-            frame, dets = q_face.get(timeout=5)
-
-            #print(frame)
-            #print(dets)
-                
-        except Empty:
-            continue
+        if running == False:
+            print("def FaceAuth()完了、returnします")
+            return
 
 
         count1 += 1
 
-
-        # Draw
-        if dets.shape[0] > 0:
-
-            if dets.ndim == 1:#「顔が1人しか見つからなかった時」のための補正です。
-                dets = np.expand_dims(dets, 0)
-                #「複数の顔（リストのリスト）」を想定して動きますが、1人だけだとデータが「1つの顔（ただのリスト）」という形になってしまいます。これだと後の処理でエラーが出るため、np.expand_dims を使って**「1人だけのリスト」という二重構造**に無理やり整えています。
+        #person_close_event.wait()
 
 
-            # YuNetの検出結果(dets)を face_recognition 形式 [(top, right, bottom, left), ...] に変換
-            #face_locations = []
+        if count1 %100 == 0:
+
+            face_locations = []
+            names = []
+
+            if count1 == 100:
+                wait_endvoice.set()
+
+            # wait_endvoice.wait()
+
+            while not wait_endvoice.wait(timeout=0.1):
+                if not running:
+                    print("def FaceAuth()完了、returnします")
+                    return
 
 
-            #if count1 == 1:
+            try:
+                #キュー（箱）の中に溜まっているデータのうち、一番古いもの（次に処理すべきデータ）を1つ取り出します。
+                #timeout=5:データが届くまで最大5秒間は待つ 
+                frame, dets = q_face.get(timeout=5)
 
-                # for d in dets:
-                #     YuNetの座標 [x, y, w, h] を取得
-                #     x, y, w, h = d[0].astype(int), d[1].astype(int), d[2].astype(int), d[3].astype(int)
-                #     face_recognitionは(top, right, bottom, left)の順番
-                #     face_locations.append((y, x + w, y + h, x))
-
-                # 顔の特徴量を抽出
-                # rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                # encodings = face_recognition.face_encodings(rgb_frame, face_locations)
-            
-                # names = []
-                # for encoding in encodings:
-                #     matches = face_recognition.compare_faces(known_data["encodings"], encoding)
-                #     name = "Unknown"
-                #     if True in matches:
-                #         matched_idxs = [i for (i, b) in enumerate(matches) if b]
-                        #name = known_data["names"][matched_idxs[0]]
-                    #names.append(name)
-
-                # 描画処理
-                #for ((top, right, bottom, left), name) in zip(face_locations, names):
-                    # 枠と名前
-                    #cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-                    #y = top - 15 if top - 15 > 15 else top +15
-                    #cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+                #print(frame)
+                #print(dets)
+                    
+            except Empty:
+                continue
 
 
-            if count1 %100 == 0:
+            # Draw
+            if dets.shape[0] > 0:
 
-                face_locations = []
-                names = []
+                if dets.ndim == 1:#「顔が1人しか見つからなかった時」のための補正です。
+                    dets = np.expand_dims(dets, 0)
+                    #「複数の顔（リストのリスト）」を想定して動きますが、1人だけだとデータが「1つの顔（ただのリスト）」という形になってしまいます。これだと後の処理でエラーが出るため、np.expand_dims を使って**「1人だけのリスト」という二重構造**に無理やり整えています。
 
-                if count1 == 100:
-                    wait_endvoice.set()
 
-                wait_endvoice.wait()
+                # YuNetの検出結果(dets)を face_recognition 形式 [(top, right, bottom, left), ...] に変換
+                #face_locations = []
 
-                print("TrueになったのでFaceAuthを実行")
+
+                #if count1 == 1:
+
+                    # for d in dets:
+                    #     YuNetの座標 [x, y, w, h] を取得
+                    #     x, y, w, h = d[0].astype(int), d[1].astype(int), d[2].astype(int), d[3].astype(int)
+                    #     face_recognitionは(top, right, bottom, left)の順番
+                    #     face_locations.append((y, x + w, y + h, x))
+
+                    # 顔の特徴量を抽出
+                    # rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    # encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+                
+                    # names = []
+                    # for encoding in encodings:
+                    #     matches = face_recognition.compare_faces(known_data["encodings"], encoding)
+                    #     name = "Unknown"
+                    #     if True in matches:
+                    #         matched_idxs = [i for (i, b) in enumerate(matches) if b]
+                            #name = known_data["names"][matched_idxs[0]]
+                        #names.append(name)
+
+                    # 描画処理
+                    #for ((top, right, bottom, left), name) in zip(face_locations, names):
+                        # 枠と名前
+                        #cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+                        #y = top - 15 if top - 15 > 15 else top +15
+                        #cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+
 
                 #for d in dets:
                 d = dets[0]
@@ -720,18 +733,18 @@ def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_end
                 # 顔の特徴量を抽出
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-                print("encoding開始")
+                # print("encoding開始")
 
                 encodings = face_recognition.face_encodings(rgb_frame, face_locations)
 
-                print("encoding終了")
+                # print("encoding終了")
 
             
                 names = []
                 for encoding in encodings:
-                    print("比較開始")
+                    # print("比較開始")
                     matches = face_recognition.compare_faces(known_data["encodings"], encoding)
-                    print("比較終了")
+                    # print("比較終了")
                     name = "Unknown"
                     if True in matches:
                         matched_idxs = [i for (i, b) in enumerate(matches) if b]
@@ -752,14 +765,14 @@ def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_end
 
                     q_voice.put_nowait((names_str))
 
-                    print("q_voice送信完了")
+                    # print("q_voice送信完了")
 
-                # 描画処理
-                for ((top, right, bottom, left), name) in zip(face_locations, names):
-                    # 枠と名前
-                    cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-                    y = top - 15 if top - 15 > 15 else top +15
-                    cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+                # # 描画処理
+                # for ((top, right, bottom, left), name) in zip(face_locations, names):
+                #     # 枠と名前
+                #     cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+                #     y = top - 15 if top - 15 > 15 else top +15
+                #     cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
 
                 #cv2.imshow("OAK-D Face Recognition", frame)
 
@@ -770,9 +783,9 @@ def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_end
 
 
                 if not voice_started.is_set():#状態確認 falseの場合
-                    print("FaceAuth: set前")
+                    # print("FaceAuth: set前")
                     voice_started.set()#True
-                    print("FaceAuth: set後")
+                    # print("FaceAuth: set後")
 
                     #print(names_str)
 
@@ -787,23 +800,23 @@ def FaceAuth(q_face: Any, q_voice: Any, voice_started: threading.Event, wait_end
                     #os.system("mpg123 yomiage.mp3")
 
                 #voice_started.clear()
+                    
+
+
+
+
+
+                # # 描画処理
+                # for ((top, right, bottom, left), name) in zip(face_locations, names):
+                #     # 枠と名前
+                #     cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+                #     y = top - 15 if top - 15 > 15 else top +15
+                #     cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+
+                # cv2.imshow("OAK-D Face Recognition", frame)
+                #cv2.waitKey(1)
+
                 
-
-
-
-
-
-            # # 描画処理
-            # for ((top, right, bottom, left), name) in zip(face_locations, names):
-            #     # 枠と名前
-            #     cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-            #     y = top - 15 if top - 15 > 15 else top +15
-            #     cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
-
-            # cv2.imshow("OAK-D Face Recognition", frame)
-            #cv2.waitKey(1)
-
-            
 
 
 
@@ -814,17 +827,21 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
     count = 0
     name = ""
 
+    global running
+    global stop_face_tracking
+    global tracking_enabled
+
     while True:
 
 
-        print("SayVoice: wait開始")
+        # print("SayVoice: wait開始")
         voice_started.wait()  # ←ここで待機
         wait_endvoice.clear()
-        print("SayVoice: wait解除")
+        # print("SayVoice: wait解除")
 
         
 
-        print("TrueになったのでSayVoiceを実行")
+        # print("TrueになったのでSayVoiceを実行")
 
         count += 1
 
@@ -846,12 +863,21 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
 
             tts = gTTS(text, lang="ja", slow=False)
 
+
             #ファイルへ出力
             tts.save('yomiage.mp3')
 
+            print("------------------------------------")
 
-            print("前回の名前:" + name)
-            print("今回の名前" + names_str)
+
+            print("前回認証したの名前:" + name)
+            print("")
+            print("今回認証したの名前" + names_str)
+
+            print("------------------------------------")
+
+            print("Akari:「あなたは"+names_str+"さんですか？」")
+            print("------------------------------------")
 
 
 
@@ -869,43 +895,97 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
 
                 if countM5 == 0:
 
-                    print("M5表示処理開始")
+                    # print("M5表示処理開始")
 
                     m5.set_display_text("いいえ",pos_x=Positions.LEFT,pos_y=Positions.BOTTOM, refresh=True, size=4, text_color=Colors.BLACK)
                     m5.set_display_text("はい",pos_x=Positions.RIGHT,pos_y=Positions.BOTTOM, refresh=False, size=4, text_color=Colors.BLACK)
-               
 
-                if data["button_a"] == True:
+                print("countM5:", countM5)
+                if countM5 == 20:
 
-                    text="ごめなさーーーーーーーーーい"
+                    stop_face_tracking = True
+
+                    m5.set_display_text("(T_T)",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=10)
+
+                    print("1分経過しました。反応がないので人検知に戻ります。")
+
+                    time.sleep(5)
+
+                    joints.set_joint_velocities(pan=5,tilt=5)
+
+                    joints.move_joint_positions(pan=0, tilt=-0.5)
+
+                    text="リアクションがなかったからもう一度探すね。"
 
                     tts = gTTS(text, lang="ja", slow=False)
 
                     #ファイルへ出力
                     tts.save('yomiage.mp3')
 
+                    print("------------------------------------")
+
+                    #音声ファイルの読み込み
+                    os.system("mpg123 yomiage.mp3")
+
+                
+
+                    client.AboutKachaka(1)
+
+                    time.sleep(10)
+
+                    human_detection.detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
+                    
+                    running = False
+                    print("def SayVoice()完了、returnします")
+                    return
+               
+
+                if data["button_a"] == True:
+
+                    print("------------------------------------")
+
+                    print("人が「いいえ」を選択しました。")
+
+                    m5.set_display_text("いいえ",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=5)
+                    
+
+                    text="間違えちゃってごめんね？もう一度確認するね。"
+
+                    tts = gTTS(text, lang="ja", slow=False)
+
+                    #ファイルへ出力
+                    tts.save('yomiage.mp3')
+
+                    print("Akari:「間違えちゃってごめんね。もう一度確認するね」")
+                    print("------------------------------------")
+
                     #音声ファイルの読み込み
                     os.system("mpg123 yomiage.mp3")
 
                     time.sleep(2)
+
+                    m5.set_display_text("顔認証中",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=5)
 
                     break
 
 
                 if data["button_c"] == True:
 
+                    m5.set_display_text("はい",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=5)
+
 
                     for name in reject_name:
 
                         if name == names_str:
-                            text = "何回もごめんねーー"
+                            text = "何回も邪魔しちゃってごめんね"
                             tts = gTTS(text, lang="ja", slow=False)
                             #ファイルへ出力
                             tts.save('yomiage.mp3')
                             #音声ファイルの読み込み
                             os.system("mpg123 yomiage.mp3")
 
-                            tracking_enabled = False
+                            #tracking_enabled = False
+                            stop_face_tracking = True
 
                             client.AboutKachaka(1)
 
@@ -913,25 +993,17 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
 
                             human_detection.detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
 
+                            running = False
+                            print("def SayVoice()完了、returnします")
+                            return
 
                     answer_yes = AnswerYes(names_str, m5, joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
 
-                    # hour = dt.hour
-
-                    # if hour == setting_time:
-                    #     answer_yes.request_sun()
-
-                    # if soil > soil_threshold:
-                    #     answer_yes.request_water()
-
-                    # if tempC_threshold_min > tempC or tempC > tempC_threshold_max:
-                    #     answer_yes.request_temp()
-
-                    
-
-
-
                     answer_yes.which_request()
+
+                    running = False
+                    print("def SayVoice()完了、returnします")
+                    return
 
                     #break
 
@@ -957,9 +1029,14 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
         
 
         elif names_str == name:
+            print("------------------------------------")
+            print("前回認証したの名前:" + name)
+            print("")
+            print("今回認証したの名前" + names_str)
+            print("")
+            print("認証結果が同じ為スキップ")
 
-            print("前回の名前:" + name)
-            print("今回の名前" + names_str)
+            print("------------------------------------")
 
             time.sleep(3)
 
@@ -984,9 +1061,15 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
             #ファイルへ出力
             tts.save('yomiage.mp3')
 
+            print("------------------------------------")
+            print("前回認証したの名前:" + name)
+            print("")
+            print("今回認証したの名前" + names_str)
 
-            print("前回の名前:" + name)
-            print("今回の名前" + names_str)
+            print("------------------------------------")
+
+            print("Akari:「あなたは"+names_str+"さんですか？」")
+            print("------------------------------------")
 
 
 
@@ -1000,78 +1083,127 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
 
             while True:
 
-                print("countM5:",countM5)
+                # print("countM5:",countM5)
 
                 data = m5.get()
 
                 if countM5 == 0:
 
-                    print("M5表示処理開始")
+                    # print("M5表示処理開始")
 
                     m5.set_display_text("いいえ",pos_x=Positions.LEFT,pos_y=Positions.BOTTOM, refresh=True, size=4, text_color=Colors.BLACK)
                     m5.set_display_text("はい",pos_x=Positions.RIGHT,pos_y=Positions.BOTTOM, refresh=False, size=4, text_color=Colors.BLACK)
 
-               
+                print("countM5:", countM5)
+                if countM5 == 20:
 
-                if data["button_a"] == True:
+                    stop_face_tracking = True
 
-                    text="ごめんなさーーーーーーーーーい"
+                    m5.set_display_text("(T_T)",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=10)
+
+                    print("1分経過しました。反応がないので人検知に戻ります。")
+
+                    time.sleep(5)
+
+                    joints.set_joint_velocities(pan=5,tilt=5)
+
+                    joints.move_joint_positions(pan=0, tilt=-0.5)
+
+                    text="リアクションがなかったからもう一度探すね。"
 
                     tts = gTTS(text, lang="ja", slow=False)
 
                     #ファイルへ出力
                     tts.save('yomiage.mp3')
 
+                    print("------------------------------------")
+
+                    #音声ファイルの読み込み
+                    os.system("mpg123 yomiage.mp3")
+
+                
+
+                    client.AboutKachaka(1)
+
+                    time.sleep(10)
+
+                    human_detection.detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
+                    
+                    running = False
+                    print("def SayVoice()完了、returnします")
+                    return
+
+
+
+               
+
+                if data["button_a"] == True:
+
+                    print("------------------------------------")
+
+                    print("人が「いいえ」を選択しました。")
+
+                    m5.set_display_text("いいえ",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=5)
+
+                    text="間違えちゃってごめんね？もう一度確認するね。"
+
+                    tts = gTTS(text, lang="ja", slow=False)
+
+                    #ファイルへ出力
+                    tts.save('yomiage.mp3')
+
+                    print("Akari:「間違えちゃってごめんね。もう一度確認するね。」")
+                    print("------------------------------------")
+
                     #音声ファイルの読み込み
                     os.system("mpg123 yomiage.mp3")
 
                     time.sleep(2)
+
+                    m5.set_display_text("顔認証中",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=5)
 
                     break
 
 
                 if data["button_c"] == True:
 
+                    m5.set_display_text("はい",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=5)
+
                     for name in reject_name:
 
                         if name == names_str:
-                            text = "何回もごめんねーー"
+                            text = "何回も呼んじゃってごめんね"
                             tts = gTTS(text, lang="ja", slow=False)
                             #ファイルへ出力
                             tts.save('yomiage.mp3')
                             #音声ファイルの読み込み
                             os.system("mpg123 yomiage.mp3")
 
-                            tracking_enabled = False
+                            #tracking_enabled = False
+                            stop_face_tracking = False
 
                             client.AboutKachaka(1)
 
                             time.sleep(10)
 
                             human_detection.detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
-
+                            
+                            running = False
+                            print("def SayVoice()完了、returnします")
+                            return
 
                     answer_yes = AnswerYes(names_str, m5, joints, reject_name,judgement_soil,judgement_temp,judgement_suntime)
 
-                    # hour = dt.hour
-
-                    # if hour == setting_time:
-                    #     answer_yes.request_sun()
-
-                    # if soil > soil_threshold:
-                    #     answer_yes.request_water()
-
-                    # if tempC_threshold_min > tempC or tempC > tempC_threshold_max:
-                    #     answer_yes.request_temp()
-
                     answer_yes.which_request()
 
-                    break
+                    running = False
+                    print("def SayVoice()完了、returnします")
+                    return
 
                 
                 countM5 += 1
 
-                time.sleep(3)
+                time.sleep(1)
 
                 
 
@@ -1094,6 +1226,13 @@ def SayVoice(q_voice: Any ,voice_started: threading.Event, wait_endvoice: thread
 
 def face_tracking(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime) -> None:
 
+    global stop_face_tracking
+    global running
+
+    running = True
+
+    m5.set_display_text("顔認証中",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=5)
+    
     #データの受け渡しをするものがキュー
     q_detection: Any = Queue()
     #q_face: Any = Queue()
@@ -1103,8 +1242,14 @@ def face_tracking(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_
     voice_started = threading.Event()
     wait_endvoice = threading.Event()
 
+    stop_face_tracking = False
+
     face_tracker = FaceTracker(joints,m5)
     direction_updater = DirectionUpdater()
+
+    print("====================================")
+
+    print("顔追従をを開始します。")
 
 
     t1 = threading.Thread(target=FaceRecognition, args=(q_detection,q_face,m5,))
@@ -1129,3 +1274,16 @@ def face_tracking(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_
     #t4.join()
     t5.join()
     t6.join()
+
+    print("def face_tracking()が完了、returnします")
+
+    return
+
+
+# if __name__ == "__main__":
+#     akari = AkariClient()
+#     m5 = akari.m5stack
+#     joints = akari.joints
+#     judgement_soil,judgement_temp,judgement_suntime = 0,0,0
+#     reject_name = []
+#     face_tracking(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)

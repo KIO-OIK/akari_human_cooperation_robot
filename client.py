@@ -7,78 +7,9 @@ import json
 
 from datetime import datetime
 
-HOST_NUMBER = "172.31.14.11"
+HOST_NUMBER = "172.31.14.16"
 
 arduino_ip = None
-
-# def IndicationClient():#指示待ち状態から動かすための情報取得
-
-#     #接続先のサーバ
-#     HOST = HOST_NUMBER
-#     PORT = 7001     #ポート番号（数字）
-
-
-#     while True:
-#         try:
-#             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-#                 s.connect((HOST, PORT))
-#                 while True:
-
-
-#                     json_data = s.recv(1024)
-#                     data = json.loads(json_data.decode())
-#                     print("No0")
-#                     print(data)
-
-#                     #json_data2 = s.recv(1024)
-#                     #data2 = json.loads(json_data2.decode())
-#                     #print("No1")
-#                     #print(data2)
-
-                    
-#                     # sensor = data["data"]
-
-#                     # print("No2")
-#                     # print(sensor)
-
-
-#                     #members = data2["data"]
-
-#                     #print("No3")
-#                     #print(members)
-
-
-
-#                     #tempC = sensor["tempC"]#温度
-#                     #hum = json_data["hum"]#湿度
-#                     #soil = sensor["soil"]#土壌
-#                     #HIC = json_data["HIC"]#体感温度
-#                     #light = json_data["light"]#光
-#                     #judgement = sensor["judgement"]#int型
-#                     #print("judgement:" + str(judgement))
-
-
-
-#                     #timestamp = sensor["timestamp"]
-#                     #dt = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-
-
-
-#                     #print(dt)
-#                     #name = members["name"]
-#                     #status = members["status"]
-
-#                     if not json_data:
-#                         print("サーバとの接続が切れました")
-#                         break
-
-#                     #print(json_data)
-
-#                     return data
-
-#         except (ConnectionRefusedError, ConnectionResetError, OSError):
-#             print("接続されません")
-#             time.sleep(1)
 
 
 def JudgementClient():
@@ -94,7 +25,9 @@ def JudgementClient():
                 s.connect((HOST, PORT))
                 while True:
 
-                    print("指示待ちです。")
+                    print("------------------------------------")
+
+                    print("サーバーから指示が来るのを待っています。")
 
 
                     json_data = s.recv(1024)
@@ -171,97 +104,6 @@ def JudgementClient():
             time.sleep(1)
 
 
-#soildata = RasPiClient()
-#print(soildata)
-#RasPiClient()
-
-
-
-
-
-
-# def SensorClient():
-
-#     #接続先のサーバ
-#     HOST = HOST_NUMBER
-#     PORT = 7000     #ポート番号（数字）
-
-
-#     while True:
-#         try:
-#             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-#                 s.connect((HOST, PORT))
-#                 conn, addr = s.accept()
-#                 while True:
-
-
-#                     json_data1 = s.recv(1024)
-#                     data = json_data1.decode()
-
-#                     if data == "HELLO":
-#                         global arduino_ip
-
-#                         arduino_ip = addr[0]
-
-#                         print("Arduino登録:", arduino_ip)
-
-#                         return data
-
-#                     data1 = json.loads(data)
-#                     print("No0")
-#                     print(data1)
-
-#                     #json_data2 = s.recv(1024)
-#                     #data2 = json.loads(json_data2.decode())
-#                     #print("No1")
-#                     #print(data2)
-
-                    
-#                     sensor = data1["data"]
-
-#                     print("No2")
-#                     print(sensor)
-
-
-#                     #members = data2["data"]
-
-#                     #print("No3")
-#                     #print(members)
-
-
-
-#                     #tempC = sensor["tempC"]#温度
-#                     #hum = json_data["hum"]#湿度
-#                     soil = sensor["soil"]#土壌
-#                     #HIC = json_data["HIC"]#体感温度
-#                     #light = json_data["light"]#光
-#                     #judgement = sensor["judgement"]#int型
-#                     #print("judgement:" + str(judgement))
-
-
-
-#                     #timestamp = sensor["timestamp"]
-#                     #dt = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-
-
-
-#                     print(dt)
-#                     #name = members["name"]
-#                     #status = members["status"]
-
-#                     if not json_data1:
-#                         print("サーバとの接続が切れました")
-#                         break
-
-#                     #print(json_data)
-
-#                     return soil
-
-#         except (ConnectionRefusedError, ConnectionResetError, OSError):
-#             print("接続されません")
-#             time.sleep(1)
-
-
 
 
 
@@ -273,27 +115,31 @@ def AboutCooperation(name, accept, reject) -> None:
 
      #接続先のサーバ
     HOST = HOST_NUMBER
-    PORT = 6000     #ポート番号（数字）
+    PORT = 4001     #ポート番号（数字）
 
 
     while True:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((HOST, PORT))
-                while True:#この無限ループは意味がない
+                #while True:#この無限ループは意味がない
 
 
-                    if accept == 1:
+                if accept == 1:
 
-                        senddata = name + " is accept"
+                    senddata = name + " accept"
 
-                        s.send(senddata.encode("utf-8"))#ソケット通信で送信できるのはbyte列のみなので、data.encode("utf-8")によって文字列をバイト列に変換
+                    s.send(senddata.encode("utf-8"))#ソケット通信で送信できるのはbyte列のみなので、data.encode("utf-8")によって文字列をバイト列に変換
 
-                    if reject == 1:
+                    return 
 
-                        senddata = name + " is reject"
+                if reject == 1:
 
-                        s.send(senddata.encode("utf-8"))#ソケット通信で送信できるのはbyte列のみなので、data.encode("utf-8")によって文字列をバイト列に変換
+                    senddata = name + " reject"
+
+                    s.send(senddata.encode("utf-8"))#ソケット通信で送信できるのはbyte列のみなので、data.encode("utf-8")によって文字列をバイト列に変換
+
+                    return
 
 
 
@@ -306,41 +152,63 @@ def AboutCooperation(name, accept, reject) -> None:
             time.sleep(1)
 
 
+
 def NotFind():
 
-    #接続先のサーバ
     HOST = HOST_NUMBER
-    PORT = 5002     #ポート番号（数字）
-
+    PORT = 5002
 
     while True:
+
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((HOST, PORT))
 
                 json_data = s.recv(1024)
+
+                # 接続が切れた場合は終了
+                if not json_data:
+                    print("5002番ポートとの接続が切れました")
+                    return None
+
                 data = json_data.decode()
 
-                print("sent_data:",data)
+                if data != "":
+                    return data
 
-                return data
+                return None
 
-                
-                #while True:#この無限ループは意味がない
-
-
-                    # senddata = "not find people"
-
-                    # s.send(senddata.encode("utf-8"))#ソケット通信で送信できるのはbyte列のみなので、data.encode("utf-8")によって文字列をバイト列に変換
-
-
-
-        except (ConnectionRefusedError, ConnectionResetError):
-            print("接続されません")
+        except (
+            ConnectionRefusedError,
+            ConnectionResetError
+        ):
+            print("一周完了通知に接続されません")
             time.sleep(1)
 
 
-def AboutKachaka(go) -> None:
+# def NotFind():
+
+#     #接続先のサーバ
+#     HOST = HOST_NUMBER
+#     PORT = 5002     #ポート番号（数字）
+
+
+#     while True:
+#         try:
+#             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+#                 s.connect((HOST, PORT))
+
+#                 json_data = s.recv(1024)
+#                 data = json_data.decode()
+
+#                 if data != "":
+#                     print("一周したことを教えるデータ「" + data + "」")
+
+
+#                     return data
+
+
+def AboutKachaka(go):
 
     #接続先のサーバ
     HOST = HOST_NUMBER
@@ -350,6 +218,10 @@ def AboutKachaka(go) -> None:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((HOST, PORT))
+
+
+                    #break
+
 
 
                 if go == 2:
@@ -379,10 +251,131 @@ def AboutKachaka(go) -> None:
                     break
 
         except (ConnectionRefusedError, ConnectionResetError):
-            print("接続されません")
+            print("kachaka指示ポートに接続されません")
             time.sleep(1)
 
 
 
 
+def PlantKachaka(go) -> None:
 
+    #接続先のサーバ
+    HOST = HOST_NUMBER
+    PORT = 4002     #ポート番号（数字）
+
+    while True:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((HOST, PORT))
+
+                # if go == 3:
+
+                #     receive_data = s.recv(1024)
+                #     data = receive_data.decode()
+
+                #     print(data)
+
+                #     return data
+
+
+
+                if go == 2:
+
+                    senddata = "back plant"
+
+                    s.send(senddata.encode("utf-8"))#ソケット通信で送信できるのはbyte列のみなので、data.encode("utf-8")によって文字列をバイト列に変換
+                    
+                    break
+
+
+                if go == 1:
+
+                    senddata = "come plant"
+
+                    s.send(senddata.encode("utf-8"))#ソケット通信で送信できるのはbyte列のみなので、data.encode("utf-8")によって文字列をバイト列に変換
+                    
+                    break
+
+
+                if go == 0:
+
+                    senddata = "stop plant"
+
+                    s.send(senddata.encode("utf-8"))#ソケット通信で送信できるのはbyte列のみなので、data.encode("utf-8")によって文字列をバイト列に変換
+
+                    break
+
+        except (ConnectionRefusedError, ConnectionResetError):
+            print("植物kachaka指示ポートに接続されません")
+            time.sleep(1)
+
+
+
+def ReDocking(receive):
+
+    HOST = HOST_NUMBER
+    PORT = 4003
+
+    while True:
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((HOST, PORT))
+
+                if receive == 1:
+
+                    json_data = s.recv(1024)
+
+                    # 接続が切れた場合は終了
+                    if not json_data:
+                        print("4003番ポートとの接続が切れました")
+                        time.sleep(1)
+
+                    data = json_data.decode().strip()
+
+                    print("data:"+ data)
+
+                    return data
+
+        except (
+            ConnectionRefusedError,
+            ConnectionResetError
+        ):
+            print("AKARIシェルフドッキングポートに接続されません")
+            time.sleep(1)
+
+
+
+
+def PlantArrive(receive):
+
+    HOST = HOST_NUMBER
+    PORT = 4004
+
+    while True:
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((HOST, PORT))
+
+                if receive == 1:
+
+                    json_data = s.recv(1024)
+
+                    # 接続が切れた場合は終了
+                    if not json_data:
+                        print("4004番ポートとの接続が切れました")
+                        time.sleep(1)
+
+                    data = json_data.decode().strip()
+
+                    print("data:"+ data)
+
+                    return data
+
+        except (
+            ConnectionRefusedError,
+            ConnectionResetError
+        ):
+            print("植物到着ポートに接続されません")
+            time.sleep(1)

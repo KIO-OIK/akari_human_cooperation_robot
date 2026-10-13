@@ -18,7 +18,9 @@ import human_detection
 import face_distance
 # from client import scheduler
 # from client import SensorClient
-import new_arduino_send_akari
+import arduino_send_akari
+
+import main
 
 
 #import main
@@ -93,7 +95,7 @@ class AnswerYes:
 
                 self.m5.set_display_text("(T_T)",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=10)
 
-                text="忙しいのにごめんねー？"
+                text="忙しいのにごめんね"
 
                 tts = gTTS(text, lang="ja", slow=False)
 
@@ -114,6 +116,8 @@ class AnswerYes:
 
                 client.AboutCooperation(self.name, 0, 1)
 
+                face_tracking_auth.stop_face_tracking = True
+
                 self.reject_name.append(self.name)
 
                 client.AboutKachaka(1)
@@ -127,13 +131,14 @@ class AnswerYes:
 
                 time.sleep(20)
 
-                human_detection.detect_human(self.reject_name)#人検知機能
+                human_detection.detect_human(self.m5,self.joints,self.reject_name,self.judgement_soil,self.judgement_temp,self.judgement_suntime)#人検知機能
 
+                print("def request_water(self)完了、returnします。")
+
+                return
                 #face_distance.face_distance()#人の距離検知
 
                 #face_tracking_auth.tracking_enabled = True
-
-                break
 
 
             if data["button_c"] == True:
@@ -145,7 +150,7 @@ class AnswerYes:
 
                 #time.sleep(5)
 
-                text="ありがとう！植物も喜んでるよ！"
+                text="ありがとう！植物も喜んでるよ！今から植物を近くに持ってくるね！"
 
                 tts = gTTS(text, lang="ja", slow=False)
 
@@ -175,17 +180,67 @@ class AnswerYes:
                 #音声ファイルの読み込み
                 os.system("mpg123 yomiage_yes.mp3")
 
+
                 face_tracking_auth.tracking_enabled = True
 
-                # threading.Thread(target=SensorClient, daemon=True).start()
-                # threading.Thread(target=scheduler, daemon=True).start()
+                client.PlantKachaka(1)#植物を近くに運ぶ
 
-                arduino_send_akari.main()
+                PlantArrive = client.PlantArrive(1)
 
+                text="かちゃかが運んできたら、シェルフにあるじょうろの１目盛分のお水を上げてほしいな！"
+
+
+                tts = gTTS(text, lang="ja", slow=False)
+
+                #ファイルへ出力
+                tts.save('yomiage_yes.mp3')
+
+                        #音声ファイルの読み込み
+                os.system("mpg123 yomiage_yes.mp3")
+
+                time.sleep(60)
+
+                while True:
+                    latest_temp_c, latest_soil1, latest_soil2, latest_soil3, latest_light = arduino_send_akari.main()
+
+                    if latest_soil1 < 409 and latest_soil2 < 409 and latest_soil3 < 429:
+                        self.m5.set_display_text("(^_^)",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=10)
+
+                        text="お水が満たされたよ。協力してくれてありがとう"
+
+                        tts = gTTS(text, lang="ja", slow=False)
+
+                        #ファイルへ出力
+                        tts.save('yomiage_yes.mp3')
+
+                                #音声ファイルの読み込み
+                        os.system("mpg123 yomiage_yes.mp3")
+
+                        self.judgement_soil = 0
+
+                        break
+
+                    text="もう１目盛分のお水をあげてほしいな。"
+
+                    tts = gTTS(text, lang="ja", slow=False)
+
+                    #ファイルへ出力
+                    tts.save('yomiage_yes.mp3')
+
+                            #音声ファイルの読み込み
+                    os.system("mpg123 yomiage_yes.mp3")
+
+
+
+                # client.AboutKachaka(2)
+
+                # print("kachaka back 実行しました。")
+
+                client.AboutCooperation(self.name, 1, 0)
 
                 #time.sleep(2)
 
-                #break
+                break
 
             
             countM5 += 1
@@ -253,6 +308,8 @@ class AnswerYes:
 
                 self.reject_name.append(self.name)
 
+                face_tracking_auth.stop_face_tracking = True
+
                 client.AboutKachaka(1)
 
                 #time.sleep(2)
@@ -263,8 +320,11 @@ class AnswerYes:
 
                 time.sleep(20)
 
-                human_detection.detect_human(self.reject_name)#人検知機能
+                human_detection.detect_human(self.m5,self.joints,self.reject_name,self.judgement_soil,self.judgement_temp,self.judgement_suntime)#人検知機能
 
+                print("def request_sun(self)完了、returnします。")
+
+                return
 
                 #face_tracking_auth.tracking_enabled = True
 
@@ -312,6 +372,59 @@ class AnswerYes:
                 os.system("mpg123 yomiage_yes.mp3")
 
                 face_tracking_auth.tracking_enabled = True
+
+                client.PlantKachaka(1)#植物を近くに運ぶ
+
+                text="今からかちゃかが植物を運んでくるね。"
+
+
+                tts = gTTS(text, lang="ja", slow=False)
+
+                #ファイルへ出力
+                tts.save('yomiage_yes.mp3')
+
+                        #音声ファイルの読み込み
+                os.system("mpg123 yomiage_yes.mp3")
+
+                latest_temp_c, latest_soil1, latest_soil2, latest_soil3, latest_light = arduino_send_akari.main()
+
+                old_light = latest_light
+
+                PlantArrive = client.PlantArrive(1)
+
+                text = "植物がついたら、植木鉢についているライトのコードを繋いでから電源をいれて、タイマーを３時間設定にしてくれるかな。時計マークのボタンを３回押して、スイッチがオレンジに点灯したら大丈夫だよ。"
+
+                tts = gTTS(text, lang="ja", slow=False)
+
+                #ファイルへ出力
+                tts.save('yomiage_yes.mp3')
+
+                        #音声ファイルの読み込み
+                os.system("mpg123 yomiage_yes.mp3")
+
+                time.sleep(60)
+
+                while True:
+                    latest_temp_c, latest_soil1, latest_soil2, latest_soil3, latest_light = arduino_send_akari.main()
+
+                    light_difference = latest_light - old_light
+
+                    if light_difference > 10:
+                        self.m5.set_display_text("(^_^)",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=10)
+
+                        text="ライトが起動したよ。協力してくれてありがとう。"
+
+                        tts = gTTS(text, lang="ja", slow=False)
+
+                        #ファイルへ出力
+                        tts.save('yomiage_yes.mp3')
+
+                                #音声ファイルの読み込み
+                        os.system("mpg123 yomiage_yes.mp3")
+
+                        self.judgement_suntime = 0
+
+                        break
 
                 time.sleep(2)
 
@@ -389,9 +502,14 @@ class AnswerYes:
                 #音声ファイルの読み込み
                 os.system("mpg123 yomiage_yes.mp3")
 
+                # threadCoop = threading.Thread(target=client.AboutCooperation, args=(self.name, 0, 1,))
+                # threadCoop.start()
+
                 client.AboutCooperation(self.name, 0, 1)
 
                 self.reject_name.append(self.name)
+
+                face_tracking_auth.stop_face_tracking = True
 
                 client.AboutKachaka(1)
 
@@ -399,9 +517,11 @@ class AnswerYes:
 
                 time.sleep(20)
 
-                human_detection.detect_human(self.reject_name)#人検知機能
+                human_detection.detect_human(self.m5,self.joints,self.reject_name,self.judgement_soil,self.judgement_temp,self.judgement_suntime)#人検知機能
 
+                print("def request_temp(self)完了、returnします。")
 
+                return
                 #face_tracking_auth.tracking_enabled = True
 
                 break
@@ -448,9 +568,130 @@ class AnswerYes:
 
                 face_tracking_auth.tracking_enabled = True
 
-                time.sleep(2)
 
-                break
+
+
+
+
+
+                # client.PlantKachaka(1)#植物を近くに運ぶ
+
+                # time.sleep(120)
+
+                # text="かちゃかが運んできたこの植物にお水をおねがい！"
+
+
+                # tts = gTTS(text, lang="ja", slow=False)
+
+                # #ファイルへ出力
+                # tts.save('yomiage_yes.mp3')
+
+                #         #音声ファイルの読み込み
+                # os.system("mpg123 yomiage_yes.mp3")
+
+                # time.sleep(60)
+
+                if self.judgement_temp == 1:#寒いとき
+
+                    old_temp_c = 0
+                    temp_raise = 0
+
+                    #while True:
+
+                    latest_temp_c, latest_soil1, latest_soil2, latest_soil3, latest_light = arduino_send_akari.main()
+
+                    old_temp_c = latest_temp_c
+
+                    time.sleep(300)
+
+                    while True:
+                        latest_temp_c, latest_soil1, latest_soil2, latest_soil3, latest_light = arduino_send_akari.main()
+
+                        if latest_temp_c - old_temp_c > 0:
+
+                            self.m5.set_display_text("(^_^)",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=10)
+
+                            text="部屋が暖かくなったよ。協力してくれてありがとう"
+
+                            tts = gTTS(text, lang="ja", slow=False)
+
+                            #ファイルへ出力
+                            tts.save('yomiage_yes.mp3')
+
+                                    #音声ファイルの読み込み
+                            os.system("mpg123 yomiage_yes.mp3")
+
+                            self.judgement_temp = 0
+
+                            break
+
+                        text="もう少し温度を上げてほしいな"
+
+                        tts = gTTS(text, lang="ja", slow=False)
+
+                        #ファイルへ出力
+                        tts.save('yomiage_yes.mp3')
+
+                                #音声ファイルの読み込み
+                        os.system("mpg123 yomiage_yes.mp3")
+
+                    client.AboutCooperation(self.name, 1, 0)
+
+                    time.sleep(2)
+
+                    break
+
+
+
+                if self.judgement_temp == 2:#暑いとき
+
+                    old_temp_c = 0
+                    temp_raise = 0
+
+                    #while True:
+
+                    latest_temp_c, latest_soil1, latest_soil2, latest_soil3, latest_light = arduino_send_akari.main()
+
+                    old_temp_c = latest_temp_c
+
+                    time.sleep(300)
+
+                    while True:
+                        latest_temp_c, latest_soil1, latest_soil2, latest_soil3, latest_light = arduino_send_akari.main()
+
+                        if latest_temp_c - old_temp_c < 0:
+
+                            self.m5.set_display_text("(^_^)",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=10)
+
+                            text="部屋が涼しくなったよ。協力してくれてありがとう"
+
+                            tts = gTTS(text, lang="ja", slow=False)
+
+                            #ファイルへ出力
+                            tts.save('yomiage_yes.mp3')
+
+                                    #音声ファイルの読み込み
+                            os.system("mpg123 yomiage_yes.mp3")
+
+                            self.judgement_temp = 0
+
+                            break
+
+                        text="もう少し温度を下げてほしいな"
+
+                        tts = gTTS(text, lang="ja", slow=False)
+
+                        #ファイルへ出力
+                        tts.save('yomiage_yes.mp3')
+
+                                #音声ファイルの読み込み
+                        os.system("mpg123 yomiage_yes.mp3")
+
+                    client.AboutCooperation(self.name, 1, 0)
+
+                    time.sleep(2)
+
+                    break
 
             
             countM5 += 1
@@ -479,24 +720,93 @@ class AnswerYes:
         # print("dt:"+str(self.dt))
 
         # hour = self.dt.hour
+        first_soil_data = self.judgement_soil
+        first_suntime_data = self.judgement_suntime
 
         while True:
 
-            if self.judgement_soil == 1:
+            if self.name in self.reject_name:
+                return
+
+            elif self.judgement_soil == 1:
 
                 self.request_water()
 
-            if self.judgement_suntime == 1:#時間になったら(サーバー側から時間としきい値を取得)
+            elif self.judgement_suntime == 1:#時間になったら(サーバー側から時間としきい値を取得)
 
                 self.request_sun()
 
-            if self.judgement_temp == 1 or self.judgement_temp == 2:
+            elif self.judgement_temp == 1 or self.judgement_temp == 2:
 
                 self.request_temp()
 
                 
             else:
                 break
+
+
+
+        face_tracking_auth.stop_face_tracking = True
+
+
+        self.m5.set_display_text("(^_^)",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=10)
+
+        print("------------------------------------")
+
+        print("Akari:「必要なお世話が全部できたよ！助けてくれてありがとう！元気に育つと嬉しいな！」")
+        print("------------------------------------")
+
+        text="必要なお世話が全部できたよ！助けてくれてありがとう！元気に育つと嬉しいな！"
+
+        tts = gTTS(text, lang="ja", slow=False)
+
+        #ファイルへ出力
+        tts.save('yomiage_yes.mp3')
+
+                        # サーボの速度を5rad/sに変更
+        self.joints.set_joint_velocities(pan=10,tilt=10)
+
+        self.joints.move_joint_positions(pan=0, tilt=0.1)
+        time.sleep(0.3)
+
+        self.joints.move_joint_positions(pan=0, tilt=-0.5)
+        time.sleep(0.3)
+
+        self.joints.move_joint_positions(pan=0, tilt=0.1)
+        time.sleep(0.3)
+
+        self.joints.move_joint_positions(pan=0, tilt=-0.5)
+        time.sleep(0.3)
+
+        self.joints.move_joint_positions(pan=0, tilt=0.1)
+        time.sleep(0.3)
+
+        os.system("mpg123 yomiage_yes.mp3")
+        print("リクエスト完了")
+        print("first_soil_data:",first_soil_data)
+        print("first_suntime_data:",first_suntime_data)
+
+        if first_soil_data == 1 or first_suntime_data == 1:
+
+            client.PlantKachaka(2)#植物をもとに戻す
+
+            PlantBackOK = client.ReDocking(1)
+
+        else:
+
+            PlantBackOK = "redocking"
+
+        print("PlantBackOK:", PlantBackOK)
+
+        if PlantBackOK == "redocking":
+            print("kachaka back 実行します。")
+            time.sleep(3)
+
+            client.AboutKachaka(2)
+
+        # main.main()
+
+        return
 
 
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#face_distance.py
 
 """
 Face detection sample
@@ -24,6 +25,8 @@ import os
 import human_detection
 import face_tracking_auth
 
+from akari_client.position import Positions
+
 """
 YuNet face detection demo running on device with video input from host.
 https://github.com/ShiqiYu/libfacedetection
@@ -37,6 +40,9 @@ Blob is taken from:
 https://github.com/PINTO0309/PINTO_model_zoo/tree/main/144_YuNet
 """
 def face_distance(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime):
+
+    m5.set_display_text("人が近づくのを",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=3)
+    m5.set_display_text("待っています",pos_x=Positions.CENTER,pos_y=Positions.BOTTOM, refresh=False, size=3)
 
     timer_start_time = time.time()  # 関数呼び出し時刻を記録
         
@@ -72,7 +78,7 @@ def face_distance(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_
 
     nn_path = args.nn_model
     if not Path(nn_path).exists():
-        print("No blob found at {}. Looking into DepthAI model zoo.".format(nn_path))
+        # print("No blob found at {}. Looking into DepthAI model zoo.".format(nn_path))
         nn_path = str(
             blobconverter.from_zoo(
                 args.nn_model, shaves=6, zoo_type="depthai", use_cache=True
@@ -138,6 +144,17 @@ def face_distance(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_
         counter = 0
         fps = 0.0
         layer_info_printed = False
+
+
+
+
+        print("====================================")
+
+        print("Akariは発見した人が近づいてくるのを30秒待ちます。")
+        print("------------------------------------")
+
+
+
         while True:
             in_frame = q_cam.get()
             in_nn = q_nn.get()
@@ -184,10 +201,10 @@ def face_distance(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_
 
                     area = w * h
 
-                    print(f"bboxの面積: {area}")
+                    # print(f"bboxの面積: {area}")
 
                     elapsed = time.time() - timer_start_time  # 経過時間
-                    print(elapsed)
+                    #print(elapsed)
 
                     if area > 50000:
 
@@ -243,7 +260,7 @@ def face_distance(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_
             )
 
             # show frame
-            cv2.imshow("Detections", frame)
+            #cv2.imshow("Detections", frame)
 
             counter += 1
             if (time.time() - start_time) > 1:
@@ -252,16 +269,21 @@ def face_distance(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_
                 counter = 0
                 start_time = time.time()
 
-            if cv2.waitKey(1) == ord("q"):
-                break
+            # if cv2.waitKey(1) == ord("q"):
+            #     break
 
     
-    cv2.destroyAllWindows()
+    #cv2.destroyAllWindows()
 
     if next_action == "face_tracking":
 
-        text="人が近づきました"
-        print(text)
+        m5.set_display_text("(^_^)",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=10)
+
+        text="近づいてきてくれてありがとう。"
+        
+        print("------------------------------------")
+        print("Akari:「近づいてきてくれてありがとう。」")
+        print("------------------------------------")
 
         tts = gTTS(text, lang="ja", slow=False)
 
@@ -270,16 +292,25 @@ def face_distance(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_
 
         #音声ファイルの読み込み
         os.system("mpg123 yomiage.mp3")
-        time.sleep(5)
+        # time.sleep(5)
 
         face_tracking_auth.face_tracking(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
+
+        print("def face_distance()が完了、returnします")
+
+        return
 
 
     
     if next_action == "detect_human":
 
-        text="人が近づきませんでした"
-        print(text)
+        m5.set_display_text("(T_T)",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=10)
+
+        text="誰も来てくれなかった。しょぼーん"
+
+        print("------------------------------------")
+        print("Akari:「誰も来てくれなかった。しょぼーん。」")
+        print("------------------------------------")
 
         tts = gTTS(text, lang="ja", slow=False)
 
@@ -294,3 +325,7 @@ def face_distance(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_
         time.sleep(10)
 
         human_detection.detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)#人検知機能
+
+        print("def face_distance()が完了、returnします")
+
+        return

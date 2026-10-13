@@ -13,7 +13,10 @@ from akari_client.position import Positions
 from akari_client.color import Colors
 
 latest_temp_c = None
-latest_soil = None
+latest_soil1 = None
+latest_soil2 = None
+latest_soil3 = None
+latest_light = None
 # =====================================
 # 通信設定
 # =====================================
@@ -65,12 +68,12 @@ def current_time() -> str:
 # =====================================
 # M5Stackへ表示
 # =====================================
-def show_m5_message(
-    text: str,
-    text_color=Colors.WHITE,
-    back_color=Colors.BLACK,
-    size: int = 4
-) -> None:
+# def show_m5_message(
+#     text: str,
+#     text_color=Colors.WHITE,
+#     back_color=Colors.BLACK,
+#     size: int = 4
+# ) -> None:
     global m5_instance
 
     with m5_lock:
@@ -136,15 +139,15 @@ def register_arduino(
     )
     print("====================================")
 
-    show_m5_message(
-        text=(
-            "Arduino Connected\n"
-            "Press Button A"
-        ),
-        text_color=Colors.WHITE,
-        back_color=Colors.GREEN,
-        size=4
-    )
+    # show_m5_message(
+    #     text=(
+    #         "Arduino Connected\n"
+    #         "Press Button A"
+    #     ),
+    #     text_color=Colors.WHITE,
+    #     back_color=Colors.GREEN,
+    #     size=4
+    # )
 
 
 # =====================================
@@ -166,15 +169,15 @@ def unregister_arduino(
         "Arduinoが切断されました"
     )
 
-    show_m5_message(
-        text=(
-            "Arduino\n"
-            "Disconnected"
-        ),
-        text_color=Colors.WHITE,
-        back_color=Colors.RED,
-        size=5
-    )
+    # show_m5_message(
+    #     text=(
+    #         "Arduino\n"
+    #         "Disconnected"
+    #     ),
+    #     text_color=Colors.WHITE,
+    #     back_color=Colors.RED,
+    #     size=5
+    # )
 
 
 # =====================================
@@ -255,18 +258,27 @@ def print_sensor_data(
 ) -> None:
 
     global latest_temp_c
-    global latest_soil
+    global latest_soil1
+    global latest_soil2
+    global latest_soil3
+    global latest_light
+
 
     temp_c = sensor_data.get("tempC")
     #temp_f = sensor_data.get("tempF")
     #humidity = sensor_data.get("hum")
     #heat_index_c = sensor_data.get("HIC")
     #heat_index_f = sensor_data.get("HIF")
-    soil = sensor_data.get("soil")
-    #light = sensor_data.get("light")
+    soil1 = sensor_data.get("soil1")
+    soil2 = sensor_data.get("soil2")
+    soil3 = sensor_data.get("soil3")
+    light = sensor_data.get("light")
 
     latest_temp_c = sensor_data.get("tempC")
-    latest_soil = sensor_data.get("soil")
+    latest_soil1 = sensor_data.get("soil1")
+    latest_soil2 = sensor_data.get("soil2")
+    latest_soil3 = sensor_data.get("soil3")
+    latest_light = sensor_data.get("light")
 
     temp_judgement = int(
         sensor_data.get(
@@ -292,8 +304,10 @@ def print_sensor_data(
     #print(f"湿度           : {humidity} %")
     #print(f"体感温度       : {heat_index_c} ℃")
     #print(f"体感温度（華氏）: {heat_index_f} °F")
-    print(f"土壌センサー   : {soil}")
-    #print(f"明るさ         : {light} %")
+    print(f"土壌センサー 1  : {soil1}")
+    print(f"土壌センサー 2  : {soil2}")
+    print(f"土壌センサー 3  : {soil3}")
+    print(f"明るさ         : {light} %")
     # print(
     #     f"温度判定       : "
     #     f"{temperature_status(temp_judgement)}"
@@ -374,15 +388,15 @@ def process_arduino_message(
             f"Arduinoエラー: {error_message}"
         )
 
-        show_m5_message(
-            text=(
-                "Sensor Error\n"
-                f"{error_message}"
-            ),
-            text_color=Colors.WHITE,
-            back_color=Colors.RED,
-            size=3
-        )
+        # show_m5_message(
+        #     text=(
+        #         "Sensor Error\n"
+        #         f"{error_message}"
+        #     ),
+        #     text_color=Colors.WHITE,
+        #     back_color=Colors.RED,
+        #     size=3
+        # )
 
         with request_lock:
             request_in_progress = False
@@ -539,15 +553,15 @@ def request_sensor_data() -> None:
 
         request_in_progress = True
 
-    show_m5_message(
-        text=(
-            "Reading\n"
-            "Sensor Data..."
-        ),
-        text_color=Colors.BLACK,
-        back_color=Colors.YELLOW,
-        size=5
-    )
+    # show_m5_message(
+    #     text=(
+    #         "Reading\n"
+    #         "Sensor Data..."
+    #     ),
+    #     text_color=Colors.BLACK,
+    #     back_color=Colors.YELLOW,
+    #     size=5
+    # )
 
     result = send_command_to_arduino(
         "GET_SENSOR_DATA"
@@ -557,15 +571,15 @@ def request_sensor_data() -> None:
         with request_lock:
             request_in_progress = False
 
-        show_m5_message(
-            text=(
-                "Arduino\n"
-                "Not Connected"
-            ),
-            text_color=Colors.WHITE,
-            back_color=Colors.RED,
-            size=5
-        )
+        # show_m5_message(
+        #     text=(
+        #         "Arduino\n"
+        #         "Not Connected"
+        #     ),
+        #     text_color=Colors.WHITE,
+        #     back_color=Colors.RED,
+        #     size=5
+        # )
 
 
 # =====================================
@@ -583,13 +597,13 @@ def monitor_buttons(
 
             now = datetime.now()
 
-            if now.second == 0:
+            #if now.second == 0:
 
-                key = (now.hour, now.minute)
+            key = (now.hour, now.minute)
 
-                if key != last_sent:#同じ時刻に何回も送られないように
-                    request_sensor_data()
-                    last_sent = key
+            if key != last_sent:#同じ時刻に何回も送られないように
+                request_sensor_data()
+                last_sent = key
 
         except Exception as error:
             print(
@@ -611,7 +625,10 @@ def main() -> None:
     global m5_instance
     global arduino_socket
     global latest_temp_c
-    global latest_soil
+    global latest_soil1
+    global latest_soil2
+    global latest_soil3
+    global latest_light
 
     stop_event.clear()
 
@@ -626,23 +643,30 @@ def main() -> None:
 
             print("AKARIへ接続しました")
 
-            show_m5_message(
-                text=(
-                    "Waiting for\n"
-                    "Arduino..."
-                ),
-                text_color=Colors.WHITE,
-                back_color=Colors.BLACK,
-                size=5
-            )
+            # show_m5_message(
+            #     text=(
+            #         "Waiting for\n"
+            #         "Arduino..."
+            #     ),
+            #     text_color=Colors.WHITE,
+            #     back_color=Colors.BLACK,
+            #     size=5
+            # )
 
             print("monitor_buttons started")
 
             monitor_buttons(m5)
 
-            
+            print("def main return latest_temp_c:", latest_temp_c)
+            print("def main return latest_soil1:", latest_soil1)
+            print("def main return latest_soil2:", latest_soil2)
+            print("def main return latest_soil3:", latest_soil3)
+            print("def main return latest_soil3:", latest_light)
 
-            return latest_temp_c, latest_soil
+            if latest_temp_c == None or latest_soil1 == None or latest_soil2 == None or latest_soil3 == None or latest_light == None:
+                return 9999, 9999, 9999, 9999, 0,
+
+            return latest_temp_c, latest_soil1, latest_soil2, latest_soil3, latest_light
 
     except KeyboardInterrupt:
         print()

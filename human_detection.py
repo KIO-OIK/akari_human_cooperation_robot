@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#human_detection.py
 
 import argparse
 import json
@@ -32,6 +33,12 @@ import face_distance
 
 import main
 
+from akari_client.position import Positions
+
+import around_face_tracking_auth
+
+thread_2 = None
+
 # Get argument first
 configPathDefault = str(
     (Path(__file__).parent / Path("yolov4tiny_coco_416x416.json"))
@@ -58,7 +65,7 @@ configPathDefault = str(
 # get model path
 nnPath = "yolov4_tiny_coco_416x416"
 if not Path(nnPath).exists():
-    print("No blob found at {}. Looking into DepthAI model zoo.".format(nnPath))
+    # print("No blob found at {}. Looking into DepthAI model zoo.".format(nnPath))
     nnPath = str(
         blobconverter.from_zoo(
             nnPath, shaves=6, zoo_type="depthai", use_cache=True
@@ -81,6 +88,8 @@ metadata = nnConfig.get("NN_specific_metadata", {})#YOLO固有設定
 syncNN = True#カメラ画像と推論結果を同期させる
 
 def detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime):
+
+    m5.set_display_text("人探し中",pos_x=Positions.CENTER,pos_y=Positions.CENTER, refresh=True, size=5)
 
     #state = "search"  # search → tracking
     target_area = 0.50 # 近い判定のしきい値（調整必要）
@@ -173,7 +182,7 @@ def detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_s
                 )
                 cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
             # Show the frame
-            cv2.imshow(name, frame)
+            # cv2.imshow(name, frame)
 
 
 
@@ -192,10 +201,14 @@ def detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_s
 
             while True:
 
+
                 if not stop_event.is_set():
                     return
 
-                print("stop_event:", stop_event.is_set())
+                print("Akariは人を探しています")
+                print("------------------------------------")
+
+                # print("stop_event:", stop_event.is_set())
 
                 count += 1
 
@@ -213,7 +226,16 @@ def detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_s
 
         def notfound():
             global be_finding
-            be_finding = client.NotFind()
+
+            data = client.NotFind()
+
+            if data is not None:
+                be_finding = data
+
+        
+        # def notfound():
+        #     global be_finding
+        #     be_finding = client.NotFind()
 
 
 
@@ -226,15 +248,32 @@ def detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_s
 
         be_finding = "be_finding"
 
-        thread_1 = threading.Thread(target=servo)
 
-        thread_2 = threading.Thread(target=notfound)
+
+
+
+
+
+        print("====================================")
+
+        print("Akariは人を探しはじめます。")
+        print("------------------------------------")
+
+
+
+
+
+        thread_1 = threading.Thread(target=servo)
 
         thread_1.start()
 
-        thread_2.start()
+        global thread_2
 
-        found = False
+        if thread_2 is None or not thread_2.is_alive():
+            thread_2 = threading.Thread(target=notfound)
+            thread_2.start()
+
+        #found = False
 
         while True:
 
@@ -262,9 +301,10 @@ def detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_s
 
                 for detection in detections:
                     dataname = labelMap[detection.label]
-                    print(dataname)
+                    # print(dataname)
 
                     if dataname == "person":
+                        
 
                         next_action = "face_distance"
                         
@@ -281,20 +321,30 @@ def detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_s
                 print("一周しました")
                 break
 
-            if cv2.waitKey(1) == ord("q"):
-                break
+            # if cv2.waitKey(1) == ord("q"):
+            #     break
 
             if next_action == "face_distance":
                 break
 
-            if found == True:
-                break
+            # if found == True:
+            #     break
 
-    cv2.destroyAllWindows()
+    # cv2.destroyAllWindows()
 
+    #一周したとき
     if be_finding != "be_finding":
         stop_event.clear()
-        main.main()
+        #main.main()
+        around_face_tracking_auth.face_tracking(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
+
+        print("def detect_human()完了、returnします")
+
+        return
+
+
+
+        
 
     client.AboutKachaka(0)#kachaka停止
 
@@ -309,11 +359,15 @@ def detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_s
     #if state == "search":
 
 
-    text="人間はっけーーーーーーーん。そこの人。こっちに来てください。"
+    text="人間さんこんにちは。そこのお方。こっちに来てください。"
+
 
     stop_event.clear()
 
-    print("stop_event:", stop_event.is_set())
+    print("Akari:「人間さんこんにちは。そこのお方。こっちに来てください。」")
+    print("------------------------------------")
+
+    # print("stop_event:", stop_event.is_set())
 
     tts = gTTS(text, lang="ja", slow=False)
 
@@ -329,6 +383,15 @@ def detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_s
 
     face_distance.face_distance(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)#人の距離検知
 
+    print("def detect_human()完了、returnします")
 
-if __name__ == "__main__":
-    detect_human()
+    return
+
+    
+# if __name__ == "__main__":
+    # akari = AkariClient()
+    # m5 = akari.m5stack
+    # joints = akari.joints
+    # judgement_soil,judgement_temp,judgement_suntime = 0,0,0
+    # reject_name = []
+    # detect_human(m5,joints,reject_name,judgement_soil,judgement_temp,judgement_suntime)
