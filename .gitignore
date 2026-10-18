@@ -1,0 +1,5 @@
+.DS_Store
+venv
+known_faces
+__pycache__
+encodings.pickle
